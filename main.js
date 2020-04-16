@@ -1,54 +1,37 @@
 // Written by Will Kaufman, April 2020
 
-// randomly color all the paragraphs
-// d3.selectAll("p").style("color", function() {
-//   return "hsl(" + Math.random() * 360 + ",100%,50%)";
-// });
+import { Workout, Person } from './training.js';
 
 // create svg DOM
 var vis = d3.select("#graph").append("svg");
-
-var w = 900; h = 400;
+var w = 900, h = 400;
 vis.attr("width", w).attr("height", h);
-
 vis.text("The Graph").select("#graph");
 
-class Workout {
-  // a workout object specifices type of workout,
-  // the volume of the workout, and intensity
-  //
-  // Naively, I'll say intensity is measured as % of maximum (power for
- // cardio, weight for lifts)
-  // (and should probably update this later)
-  // Volume for cardio workouts is measured in minutes
-  // and for lifting workouts is measured in reps
-  //
-  // Ex: bike workout, 2 hours long
-  constructor(type, volume, intensity) {
-    this.type = type;
-    this.volume = volume;
-    this.intensity = intensity
-  }
+
+
+// Graphics etc.
+
+function clicked(d, i) {
+  if (d3.event.defaultPrevented) return; // dragged
   
-  static workoutTypes = ['row', 'erg', 'bike', 'run', 'lift', 'swim', 'hike'];
-  
-  get stress() {
-    return this.getStress();
-  }
-  
-  getStress() {
-    return this.volume * this.intensity;
-  }
-  
-  getWidth() {
-    return this.volume * 1.5;
-  }
-  getHeight() {
-    return this.intensity * 200;
-  }
-  getColor() {
-    return Workout.workoutTypes.indexOf(this.type)
-  }
+  d3.select(this).transition()
+      .attr("fill", "#ffffff")
+      .transition()
+      .attr("fill", d => colorScale(d.getColor()));
+}
+
+function dragstarted(d) {
+  d3.select(this).raise().attr("stroke", "black");
+}
+
+function dragged(d) {
+  d3.select(this).attr("x", d.x = d3.event.x)
+                 .attr("y", d.y = d3.event.y);
+}
+
+function dragended(d) {
+  d3.select(this).attr("stroke", null);
 }
 
 var colorScale = d3.scaleOrdinal(d3.schemeSet3);
@@ -67,4 +50,11 @@ vis.selectAll("rect .workouts")
    .attr("y", 1)
    .attr("width", d => d.getWidth())
    .attr("height", d => d.getHeight())
-   .attr("fill", d => colorScale(d.getColor()));
+   .attr("fill", d => colorScale(d.getColor()))
+   .on("click", clicked)
+   .call(d3.drag()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended)
+        )
+   
